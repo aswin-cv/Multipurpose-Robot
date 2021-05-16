@@ -1,0 +1,450 @@
+#include <SoftwareSerial.h>
+#include <SimpleDHT.h>
+
+#include <Servo.h>          //Servo motor library. This is standard library
+#include <NewPing.h>        //Ultrasonic sensor function library. You must install this library
+
+
+String voice;
+String readString;
+
+//----Global variables for the pins---//
+int pin1 = 9;
+int pin2 = 10;
+int pin3 =A0;		
+int pinDHT11 = 2;
+int a=0;
+int bobstacle = HIGH;
+int lobstacle = HIGH;
+int robstacle = HIGH;
+int bpin = 12;
+int trigPin = A1;
+int echoPin = 12;
+
+Servo servo_motor; //our servo name
+
+int Received=0;
+int pin2_state =0;
+
+long duration, distances, RightSensor,BackSensor,FrontSensor,LeftSensor;       // the pin where you connect the output pin of IR sensor
+
+
+SimpleDHT11 dht11(pinDHT11);
+//robot programm//
+const int LeftMotorForward = 3;
+const int LeftMotorBackward = 4;
+const int RightMotorForward = 5;
+const int RightMotorBackward = 6;
+
+//sensor pins
+#define trig_pin3 A1 //analog input 1
+#define echo_pin3 12 //analog input 2
+#define trig_pin1 A2
+#define echo_pin1 A3
+#define trig_pin2 A4
+#define echo_pin2 A5
+
+#define maximum_distance 200
+boolean goesForward = false;
+
+
+//sensor function
+
+NewPing sonar(trigPin, echoPin, 200);
+
+String inputString = "";      // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+
+
+const int IN1 = 3;            // Use a standard hobby motor driver which has
+const int IN2 = 4;            // two motor outputs. Combination of Inputs
+const int IN3 = 5;           // control clockwise and counter clockwise rotation.
+const int IN4 = 6;           //
+
+int turnSpeed = 0;            // How fast robot should turn. Calculated during detection. Balance with minSpeed setting.
+int maxFOV = 600;             // Field of view in pixels from centre
+
+int minSpeed = 120;           // Motors will starting turning around 120 value. Change to suit your motors.
+int turnCount = 0;            // Count of how many times we have turned.
+int forwardCount = 0;         // Forward count
+int searchCount = 0;          // How many times have we searched.
+int maxSearchWaitTime = 3000; // How long before searching people. (3 seconds)
+int maxSearchCount = 10;
+int maxForwardCount = 25;
+int maxTurnCount = 5;
+bool bGoForward = false;
+bool bTurning = false;
+bool bTurningRightLast = true;
+
+int xVal = -2000;
+int yVal = -2000;
+String sXVal = "";            // Horizontal x value of target from centre 0,0
+String sYVal = "";            // Vertical y value of target from centre 0,0
+int distance = 1;             // Used to hold distance from sonar reading.
+
+unsigned long StartTime = millis();
+
+
+//Initialise for the Arduino setup for OUTPUT to the pins designated as ints
+void setup()
+{
+
+Serial.begin(9600);
+pinMode(bpin,INPUT);
+
+
+pinMode(pin1,OUTPUT);
+pinMode(pin2,OUTPUT);
+pinMode(pin3,OUTPUT);
+
+digitalWrite(pin1,LOW);
+digitalWrite(pin2,HIGH);
+digitalWrite(pin3,LOW);
+pinMode(RightMotorForward, OUTPUT);
+pinMode(LeftMotorForward, OUTPUT);
+pinMode(LeftMotorBackward, OUTPUT);
+pinMode(RightMotorBackward, OUTPUT);
+pinMode(trig_pin3,OUTPUT);
+pinMode(echo_pin3,INPUT);
+pinMode(trig_pin1, OUTPUT);
+pinMode(echo_pin1, INPUT);
+pinMode(trig_pin2, OUTPUT);
+pinMode(echo_pin2, INPUT);
+
+
+pinMode(IN1, OUTPUT); // set pins to output
+pinMode(IN2, OUTPUT);
+pinMode(IN3, OUTPUT);
+pinMode(IN4, OUTPUT);
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+servo_motor.attach(8); //our servo pin
+
+servo_motor.write(115);
+delay(2000);
+
+}
+void loop()
+{
+//auto light
+
+{ int CDS = analogRead(A0);
+
+if (CDS > 50){
+
+digitalWrite(pin1, HIGH);
+
+}
+else {
+
+digitalWrite(pin1, LOW);
+Serial.println("Alert,,, no,, power,, Emergency Light is Turned On");
+delay(4000);
+
+}//end of auto light
+
+//voice commands
+{  while (Serial.available())
+{
+delay(10);
+char c = Serial.read();
+if (c == '#') {break;}
+voice += c;}
+
+if (voice == "turn on")
+{
+digitalWrite(pin2,LOW);
+Serial.println("Turned on ,,Task Completed");
+}
+if(voice == "turn off")
+{
+digitalWrite(pin2,HIGH);
+Serial.println("Turned OFF Task Completed ");
+}
+if (voice == "temperature please")
+{
+
+byte temperature = 0;
+byte humidity = 0;
+int err = SimpleDHTErrSuccess;
+if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
+Serial.print("Read DHT11 failed, err="); Serial.println(err);
+
+}
+Serial.print("Temperature and Humidity is ");
+Serial.print((int)temperature); Serial.print(" degree celsius, ");
+Serial.print((int)humidity); Serial.println(" percentage");
+
+
+delay(1500);
+}
+if(voice =="start moving")
+{
+while(1){
+SonarSensor(trig_pin1, echo_pin1);
+RightSensor = distances;
+SonarSensor(trig_pin2, echo_pin2);
+LeftSensor = distances;
+SonarSensor(trig_pin3, echo_pin3);
+FrontSensor = distances;
+bobstacle=digitalRead(bpin);
+
+if(Serial.available()){
+return 0;
+}
+
+
+if(FrontSensor<=20 )
+{
+moveBackward();
+delay(500);
+moveStop();
+if(RightSensor>LeftSensor){
+turnRight();}
+else{
+turnLeft();
+}
+}
+
+else{
+moveForward();
+}
+if(RightSensor<=20){
+turnLeft();
+delay(300);
+}
+if(LeftSensor<=20){
+
+turnRight();}
+delay(300);}}
+
+if(voice == "move forward")
+{ SonarSensor(trig_pin3,echo_pin3);
+
+if (distances >= 20)
+{
+
+while(distances >= 20){
+SonarSensor(trig_pin3,echo_pin3);
+moveForward();
+return distances;
+
+}
+}
+else{
+moveStop();
+Serial.println(" sorry there is no space to move,Say Another Command, Sir");
+}
+}
+if(voice == "turn left"){
+
+turnLeft();
+delay(300);
+moveStop();
+Serial.println("turned left sir,waiting for your another order");
+
+}
+if(voice == "turn right"){
+Serial.println("turning Right");
+delay(10);
+turnRight();
+
+delay(300);
+moveStop();
+Serial.println("turned right sir,waiting for your another order");
+}
+if(voice == "reverse"){
+Serial.println("Going Backward");
+moveBackward();
+delay(500);
+moveStop();
+Serial.println("Task Completed");
+}
+if(voice == "stop"){
+moveStop();
+}
+if(voice == "rotate"){
+Serial.println("Rotation is on progress");
+rotate();
+delay(100);
+moveStop();
+Serial.println("Task Completed");
+
+}
+if(voice=="look right"){
+lookRight();
+
+}
+if(voice=="look left"){
+lookLeft();
+
+}
+
+
+voice="";
+
+if(Serial.available()>0)
+{
+Received = Serial.read();
+
+}
+if ( Received == '2')
+{
+moveForward();
+Received=0;
+}
+if ( Received == '3')
+{
+moveBackward();
+Received=0;
+}
+if ( Received == '4')
+{
+turnLeft();
+Received=0;
+}
+if ( Received == '5')
+{
+turnRight();
+Received=0;
+}
+} }}
+void moveStop(){
+
+digitalWrite(RightMotorForward, LOW);
+digitalWrite(LeftMotorForward, LOW);
+digitalWrite(RightMotorBackward, LOW);
+digitalWrite(LeftMotorBackward, LOW);
+}
+
+void moveForward(){
+
+if(!goesForward){
+
+goesForward=true;
+
+digitalWrite(LeftMotorForward, HIGH);
+digitalWrite(RightMotorForward, HIGH);
+
+digitalWrite(LeftMotorBackward, LOW);
+digitalWrite(RightMotorBackward, LOW);
+}
+}
+
+void moveBackward(){
+
+goesForward=false;
+
+digitalWrite(LeftMotorBackward, HIGH);
+digitalWrite(RightMotorBackward, HIGH);
+
+digitalWrite(LeftMotorForward, LOW);
+digitalWrite(RightMotorForward, LOW);
+
+}
+
+void turnRight(){
+
+digitalWrite(LeftMotorForward, HIGH);
+digitalWrite(RightMotorBackward, HIGH);
+
+digitalWrite(LeftMotorBackward, LOW);
+digitalWrite(RightMotorForward, LOW);
+
+delay(5);
+}
+void turnLeft(){
+
+digitalWrite(LeftMotorBackward, HIGH);
+digitalWrite(RightMotorForward, HIGH);
+
+digitalWrite(LeftMotorForward, LOW);
+digitalWrite(RightMotorBackward, LOW);
+
+delay(5);
+}
+void rotate(){
+digitalWrite(LeftMotorBackward,LOW);
+digitalWrite(RightMotorForward, HIGH);
+
+digitalWrite(LeftMotorForward, LOW);
+digitalWrite(RightMotorBackward, LOW);
+
+delay(1500);
+
+}
+void SonarSensor(int trig_pin,int echo_pin)
+{
+digitalWrite(trig_pin, LOW);
+delayMicroseconds(2);
+digitalWrite(trig_pin, HIGH);
+delayMicroseconds(10);
+digitalWrite(trig_pin, LOW);
+duration = pulseIn(echo_pin, HIGH);
+distances = duration/58.2;
+}
+void stop(int period)
+{
+//Serial.println("stop");
+digitalWrite(IN1, 0);
+digitalWrite(IN2, 0);
+digitalWrite(IN3, 0);
+digitalWrite(IN4, 0);
+delay(period);
+}
+
+void left(int speed)
+{
+analogWrite(IN1, speed);
+analogWrite(IN2, 0);
+analogWrite(IN3, 0);
+analogWrite(IN4, speed);
+}
+
+void right(int speed)
+{
+analogWrite(IN1, 0);
+analogWrite(IN2, speed);
+analogWrite(IN3, speed);
+analogWrite(IN4, 0);
+}
+
+void forward(int speed)
+{
+analogWrite(IN1, speed);
+analogWrite(IN2, 0);
+analogWrite(IN3, speed);
+analogWrite(IN4, 0);
+}
+
+void reverse(int speed)
+{
+analogWrite(IN1, 0);
+analogWrite(IN2, speed);
+analogWrite(IN3, 0);
+analogWrite(IN4, speed);
+}
+
+
+void serialEvent() {
+while (Serial.available()) {
+
+char inChar = (char)Serial.read();
+inputString += inChar;
+
+if (inChar == '\n') {
+stringComplete = true;
+}
+}
+}
+int lookRight(){
+servo_motor.write(50);
+delay(500);
+
+}
+
+int lookLeft(){
+servo_motor.write(170);
+delay(500);
+
+}
