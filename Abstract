@@ -1,6 +1,5 @@
-This project focuses on automation using artificial intelligence.
-This can be used to overcome/minimize human labour and can be made to perform various tasks in a simple and efficient way. 
-The artificial intelligence will perform specified tasks without any human intervention.
-The robot performs many tasks like turning on emergency lights during power cuts automatically, following various voice commands given by user, object detection/surveillance, sets alarms and uses GPS and also has Alexa and Google home built in. We have used “Embedded C” as our programming language. 
-The components used are Arduino, Relay and a Server (System for management).The main advantages of the system are “It performs task without human interventionand it reduces human efforts" and most importantly it is “automatic”. 
-This can be used in Houses, offices, and in Educational Institutions etc.
+This project focuses on home automation 
+The robot performs many tasks like turning on emergency lights during power cuts automatically, following various voice commands given by user, object detection/surveillance, sets alarms and uses GPS and also has Alexa and Google home built in.
+We have used“Embedded C” as our programming language. 
+It has IR sensors so it can turn on applicances.
+
