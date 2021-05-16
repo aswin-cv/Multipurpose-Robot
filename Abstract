@@ -1,5 +1,6 @@
 This project focuses on home automation 
-The robot performs many tasks like turning on emergency lights during power cuts automatically, following various voice commands given by user, object detection/surveillance, sets alarms and uses GPS and also has Alexa and Google home built in.
+The robot performs many tasks like turning on emergency lights during power cuts automatically, following various voice commands given by user, object detection/surveillance,line tracking, uses GPS and also has Alexa and Google home built in(for this we used raspberrypi).
 We have used“Embedded C” as our programming language. 
 It has IR sensors so it can turn on applicances.
+
 
